@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarot Card Game</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sofia">
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            background-image: url("cover.jpg");
+            box-shadow: inset -2rem -2rem 20rem #000, inset 2rem 2rem 20rem #000;
+            background-position: center; 
+            background-repeat: no-repeat;
+            background-size: cover; 
+            color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 2; 
+            height: 100vh;
+            position: relative; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 6em; 
+            font-family: 'Sofia', sans-serif; 
+            text-shadow: 2px 2px 20px rgba(255, 255, 255, 0.5); 
+            margin-bottom: 20px; 
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-family: 'Sofia', sans-serif; 
+            text-shadow: 5px 5px 7px rgba(255, 255, 255, 0.5); 
+            height: 10vh;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            cursor: pointer;
+            width: 290px; 
+            display: none; 
+        }
+
+        .card.show {
+            display: block; 
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 3; 
+        }
+
+        .popup-content {
+            background-image: url(ex.jpg);
+            background-size: cover;
+            background-position: center;
+            padding: 50px;
+            border-radius: 10px;
+            color: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 300px;
+            height: 500px;
+            margin: 0 auto;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin: 20px 0; 
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 1.2em; 
+            color: white;
+            background: linear-gradient(45deg, #6a11cb, #2575fc); 
+            border: none;
+            border-radius: 20px; 
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .controls button:hover {
+            background: linear-gradient(45deg, #2575fc, #6a11cb); 
+            transform: scale(1.05); 
+        }
+
+        .volume-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tarot Card Game</h1>
+        <h2 id="instruction-text">~think about your problem or ask yes/no question</h2>
+        <img id="current-card" class="card" src="1.jpg" alt="Current Card">
+        
+        <div class="controls">
+            <button id="stopBut">Stop</button>
+            <button id="playBut">Play</button>
+        </div>
+
+        <div class="volume-control">
+            <label for="volumeSlider">∰</label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+        </div>
+
+        <div class="popup" id="popup">
+            <div class="popup-content">
+                <span class="close" onclick="closePopup()">&times;</span>
+                <h2 id="card-title"></h2>
+                <p id="card-description"></p>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const cards = [
+            { src: '1.jpg', title: 'The Moon', description: 'A card of a deep state of sensitivity and imaginative impressionability, developed within a womb of deep relaxation. FOR ADVICE, the card tells you to trust your instincts and intuitions, try to just be a witness. Do nothing! Let nature carry you forward. FOR YES/NO QUESTION, the answer is NO.' },
+            { src: '2.jpg', title: 'The Sun', description: 'A card about the self. FOR ADVICE, The Sun card advises you to have confidence in your natural divinity. Step into the full light of truth and reveal your motives and principles. Focus on the positive and the real. FOR YES/NO QUESTION, the answer is YES.' },
+            { src: '3.jpg', title: 'The Emperor', description: 'A card of the highest leadership, or the most exemplary and powerful person in the realm. FOR ADVICE, get in touch with your inner sovereignty and natural self-possession. Act with the confidence of someone who knows how to take care of business. FOR YES/NO QUESTION, the answer is YES.' },
+            { src: '4.jpg', title: 'The Hanged Man', description: 'A card of a lack of ability to help oneself through independent action. FOR ADVICE, the card advises you to accept that you have been overcome and deceived by your own devices. This is not a negative judgment. Bad things can happen to good people. FOR YES/NO QUESTION, the answer is NO. ' },
+            { src: '5.jpg', title: 'The Judgement', description: 'A card of freedom from inner conflicts and the process of opening yourself. FOR ADVICE, it is unnecesarry to reject others, but refuse to be manipulated by those who crt foul. FOR YES/NO QUESTION, the answer is YES. ' }
+            ];
+
+        let myTimer;
+        let currentCardIndex = 0;
+
+        function showCard() {
+            const cardElement = document.getElementById("current-card");
+            const currentCard = cards[currentCardIndex];
+            cardElement.src = currentCard.src;
+            cardElement.classList.add('show'); 
+        }
+
+        function showCardDetails(title, description) {
+            document.getElementById("card-title").innerText = title;
+            document.getElementById("card-description").innerText = description;
+            document.getElementById("popup").style.display = "flex";
+        }
+
+        function closePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
+
+        function shuffleCard() {
+            currentCardIndex = Math.floor(Math.random() * cards.length);
+            showCard();
+        }
+
+        const musicPlayer = new Audio('mystery.wav');
+
+        document.getElementById('volumeSlider').addEventListener('input', function() {
+            musicPlayer.volume = this.value; 
+        });
+
+        document.getElementById('stopBut').onclick = function() {
+            clearInterval(myTimer);
+            const currentCard = cards[currentCardIndex];
+            showCard(); 
+            setTimeout(() => {
+                showCardDetails(currentCard.title, currentCard.description); 
+            }, 1000); 
+        }
+
+        document.getElementById('playBut').onclick = function() {
+            clearInterval(myTimer); 
+            myTimer = setInterval(shuffleCard, 20); 
+            shuffleCard(); 
+            musicPlayer.play(); 
+            document.getElementById("instruction-text").style.display = "none"; 
+        }
+    </script>
+</body>
+</html>
